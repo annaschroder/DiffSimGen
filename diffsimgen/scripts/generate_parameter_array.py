@@ -102,13 +102,6 @@ class generate_model_parameter_array:
             Dperp = np.random.uniform(param_range['Dperp'][0],param_range['Dperp'][1],size=[self.numofsim,1])
             D = np.c_[Dpar,Dperp]
 
-            # Enforce constraint Dpar > Dperp
-            Dpar = np.max(D, axis=1)
-            Dperp = np.min(D, axis=1)
-
-            parameter_names = ['theta','phi','Dpar','Dperp']
-            parameter_array = np.c_[mu,Dpar,Dperp]
-
         elif len(self.parameter_distributions)!=0: #use provided parameter distribution
 
             theta = np.random.choice(np.squeeze(self.parameter_distributions[:,0]),size=[self.numofsim,1])
@@ -118,12 +111,12 @@ class generate_model_parameter_array:
             Dperp = np.random.choice(np.squeeze(self.parameter_distributions[:,3]),size=[self.numofsim,1])
             D = np.c_[Dpar,Dperp]
 
-            # Enforce constraint Dpar > Dperp
-            Dpar = np.max(D, axis=1)
-            Dperp = np.min(D, axis=1)
+        # Enforce constraint Dpar > Dperp
+        Dpar = np.max(D, axis=1)
+        Dperp = np.min(D, axis=1)
 
-            parameter_names = ['theta','phi','Dpar','Dperp']
-            parameter_array = np.c_[mu,Dpar,Dperp]
+        parameter_names = ['theta','phi','Dpar','Dperp']
+        parameter_array = np.c_[mu,Dpar,Dperp]
 
         return parameter_array,parameter_names
 
@@ -160,5 +153,43 @@ class generate_model_parameter_array:
 
             parameter_names = ['theta','phi','Dpar','Diso','stick_fraction','ball_fraction']
             parameter_array = np.c_[mu,Dpar,Diso,stickfrac,ballfrac]
+
+        return parameter_array,parameter_names
+    
+    def verdict(self):
+        if len(self.parameter_distributions)==0:
+
+            with open(f'{pathname}/../../resources/verdict_parameter_range.json', 'r') as f:
+                param_range = json.load(f)
+            sphere_diameter = np.random.uniform(param_range['sphere_diameter'][0],param_range['sphere_diameter'][1],size=[self.numofsim,1])
+            sphere_frac = np.random.uniform(param_range['sphere_frac'][0],param_range['sphere_frac'][1],size=[self.numofsim,1])
+            Diso = 0.9e-9
+            ball_frac = np.random.uniform(param_range['ball_frac'][0],param_range['ball_frac'][1],size=[self.numofsim,1])
+            theta = np.random.uniform(param_range['theta'][0],param_range['theta'][1],size=[self.numofsim,1])
+            phi = np.random.uniform(param_range['phi'][0],param_range['phi'][1],size=[self.numofsim,1])
+            mu = np.c_[theta,phi]
+            Dpar = np.random.uniform(param_range['Dpar'][0],param_range['Dpar'][1],size=[self.numofsim,1])
+
+        elif len(self.parameter_distributions)!=0: #use provided parameter distribution
+            sphere_diameter = np.random.choice(np.squeeze(self.parameter_distributions[:,0]),size=[self.numofsim,1])
+            sphere_frac = np.random.choice(np.squeeze(self.parameter_distributions[:,1]),size=[self.numofsim,1])
+            Diso = 0.9e-9
+            ball_frac = np.random.choice(np.squeeze(self.parameter_distributions[:,2]),size=[self.numofsim,1])
+            theta = np.random.choice(np.squeeze(self.parameter_distributions[:,3]),size=[self.numofsim,1])
+            phi = np.random.choice(np.squeeze(self.parameter_distributions[:,4]),size=[self.numofsim,1])
+            mu = np.c_[theta,phi]
+            Dpar = np.random.choice(np.squeeze(self.parameter_distributions[:,5]),size=[self.numofsim,1])
+        
+        # calculate remaining stick fraction
+        sphere_ball_frac = sphere_frac + ball_frac
+        if sphere_ball_frac > 0:
+            sphere_frac = sphere_frac/sphere_ball_frac
+            ball_frac = ball_frac/sphere_ball_frac
+            stick_frac = 0
+        else:
+            stick_frac = 1 - sphere_ball_frac
+
+        parameter_names = ['sphere_diameter','sphere_frac','Diso','ball_frac','theta','phi','Dpar','stick_frac']
+        parameter_array = np.c_(sphere_diameter,sphere_frac,Diso,ball_frac,mu,Dpar,stick_frac)
 
         return parameter_array,parameter_names

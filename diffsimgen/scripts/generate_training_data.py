@@ -110,4 +110,25 @@ def ball_stick(numofsim,acq_scheme,S0arr,SNRarr,noise_type,parameter_distributio
 
   return simulated_data,parameter_array,parameter_names,simulated_data_nonoise
 
+def verdict(numofsim,acq_scheme,S0arr,SNRarr,noise_type,parameter_distributions): 
+  numofacq = acq_scheme.number_of_measurements
+  simulated_data = np.empty((numofsim,numofacq))
+  simulated_data_nonoise = np.empty((numofsim,numofacq))
+  noise_type = noise_type
 
+  parameter_array,parameter_names = generate_model_parameter_array(numofsim,parameter_distributions).verdict() 
+
+  for ii in range(numofsim):
+    sphere_diameter = parameter_array[ii,0]
+    sphere_frac = parameter_array[ii,1]
+    Diso = parameter_array[ii,2]
+    ball_frac = parameter_array[ii,3]
+    mu = parameter_array[ii,4:6]
+    Dpar = parameter_array[ii,6]
+    stick_frac = parameter_array[ii,7]
+
+    model,param_vector = models.verdict(sphere_diameter,sphere_frac,Diso,ball_frac,mu,Dpar,stick_frac).make_model()
+    simulated_data[ii,:] = simulate_signal.simulate_SNR_signal(model,param_vector,S0arr[ii],SNRarr[ii],acq_scheme,noise_type).simulate_noisy_signal()
+    simulated_data_nonoise[ii,:] = simulate_signal.simulate_SNR_signal(model,param_vector,S0arr[ii],SNRarr[ii],acq_scheme,noise_type).simulate_true_signal()
+
+  return simulated_data,parameter_array,parameter_names,simulated_data_nonoise
